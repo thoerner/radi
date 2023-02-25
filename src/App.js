@@ -82,7 +82,7 @@ function App() {
       setAiUpdated(true);
       return;
     }
-    const response = await fetch('http://ec2-52-6-142-112.compute-1.amazonaws.com:5000/api', {
+    const response = await fetch('https://radi-api.crypt0potam.us/api', {
       method: 'POST',
       headers: {
         "Content-Type": "application/json",
@@ -97,8 +97,6 @@ function App() {
     const body = await response.json();
     if (response.status !== 200) throw Error(body.message);
 
-    // format body - need to change &lt; to < and &gt; to >
-    // also need to change '""' to '"'
     body.response = body.response.replace(/&lt;/g, '<');
     body.response = body.response.replace(/&gt;/g, '>');
     body.response = body.response.replace(/&quot;/g, '"');
