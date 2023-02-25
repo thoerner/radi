@@ -72,6 +72,7 @@ function App() {
 
   useEffect(() => {
     handleClear();
+    console.log('ai: ' + ai);
   }, [ai])
 
   // get response from api
@@ -209,7 +210,8 @@ function App() {
 
   const handleAiChange = (e) => {
     setAiUpdated(true);
-    setAi(e.target.value);
+    console.log(e.target.value)
+    setAi(Number(e.target.value));
   }
 
   window.handleChoiceClick = (choice, goldUpdate, healthUpdate, cost, item, energyUpdate) => {
@@ -365,13 +367,13 @@ function App() {
           <div style={styles.promptContainer}>
             {loading ? <LoadingAni /> : null}
             {buttons !== <div></div> && !loading ? <div style={{textAlign: 'center', width: '100vw'}}><Buttons /></div>: null}
-            {ai !== 6 &&
-            <>
+            {ai !==6 &&
+              <>
                 <label>
                   <input id="promptInput" style={styles.promptInput} type="text" value={promptInput} onChange={(e) => setPromptInput(e.target.value)} />
                 </label>
                 <input id="submitButton" style={styles.promptSubmit} type="submit" value="Submit" />
-            </>
+              </>
             }
           </div>
           <div style={styles.clearButton} onClick={() => handleClear()}>Clear</div>
