@@ -82,10 +82,10 @@ function App() {
       setAiUpdated(true);
       return;
     }
-    const response = await fetch('https://ec2-52-6-142-112.compute-1.amazonaws.com:5000/api', {
+    const response = await fetch('http://ec2-52-6-142-112.compute-1.amazonaws.com:5000/api', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         name: name,
