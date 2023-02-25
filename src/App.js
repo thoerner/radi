@@ -133,7 +133,7 @@ function App() {
           key={k.choiceId}
           className="choiceButton"
           onClick={() => {
-            window.handleChoiceClick(k.choiceId, k.gold, k.health, k.cost, k.item, k.energy);
+            window.handleChoiceClick(k.choiceId, k.gold, k.health, k.cost, k.item, k.energy, k.useItem);
           }}
         >{k.buttonText}{k.cost ? ` (${k.cost} gold)` : ''}
         </button>
@@ -222,7 +222,7 @@ function App() {
     setAi(Number(e.target.value));
   }
 
-  window.handleChoiceClick = (choice, goldUpdate, healthUpdate, cost, item, energyUpdate) => {
+  window.handleChoiceClick = (choice, goldUpdate, healthUpdate, cost, item, energyUpdate, loseItem) => {
     var totalGold = -cost || 0;
     if (cost) {
       if (gold < cost) return toast('Not enough gold!');
@@ -250,6 +250,11 @@ function App() {
     if (item) {
       setInventory([...inventory, item]);
       toast.success(`You got a ${item}!`);
+    }
+    if (loseItem) {
+      const newInventory = inventory.filter(i => i !== loseItem);
+      setInventory(newInventory);
+      toast.success(`You used a ${loseItem}!`);
     }
     if (energyUpdate) {
       if (energyUpdate > 0) {
