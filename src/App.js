@@ -366,7 +366,7 @@ function App() {
           </div>
           <div style={styles.promptContainer}>
             {loading ? <LoadingAni /> : null}
-            {buttons !== <div></div> && !loading ? <div style={{textAlign: 'center', width: '100vw'}}><Buttons /></div>: null}
+            {ai === 6 && !loading ? <div style={{textAlign: 'center', width: '100vw'}}><Buttons /></div>: null}
             {ai !==6 &&
               <>
                 <label>
