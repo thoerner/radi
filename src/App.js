@@ -4,6 +4,7 @@ import Typewriter from 'typewriter-effect';
 import parse from 'html-react-parser';
 import { useSearchParams } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
+import uEmojiParser from 'universal-emoji-parser';
 
 function App() {
   const [searchParams] = useSearchParams();
@@ -105,6 +106,7 @@ function App() {
     // body.response = body.response.replace(/""/g, '"');
     const endSymbol = body.response.indexOf('#');
     body.response = body.response.slice(0, endSymbol).trim();
+    body.response = uEmojiParser.parseToUnicode(body.response);
     if (ai === 6) {
       const keyStart = body.response.indexOf('[{');
       const keyEnd = body.response.indexOf('}]') + 2;
@@ -355,6 +357,7 @@ function App() {
           </select>
         </div>
         <div style={styles.mainContainer}>
+          {aiList[ai].name === 'Dungeon Master' ? <Inventory/> : null}
           {aiList[ai].name === 'Dungeon Master' ? <StatusBar/> : null}
 
         <form onSubmit={handleSubmit}>
