@@ -6,6 +6,124 @@ import { useSearchParams } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import uEmojiParser from 'universal-emoji-parser';
 
+const DungeonMaster = props => {
+
+
+
+  const StatusBar = props => {
+    return (
+      <div style={styles.statusBar}>
+        <GoldBalance 
+          {...props}
+        />
+        <HealthBar 
+          {...props}
+        />
+        <EnergyBar 
+          {...props}
+        />
+      </div>
+    )
+  }
+
+  const GoldBalance = props => {
+    return (
+      <div style={styles.goldBalance}>
+        <h3>Gold: {props.gold}</h3>
+      </div>
+    )
+  }
+
+  const HealthBar = props => {
+    const [healthColor, setHealthColor] = useState('green');
+
+    useEffect(() => {
+      function getColor(value){
+        //value from 0 to 1
+        var hue=((value)*120).toString(10);
+        return ["hsl(",hue,",100%,50%)"].join("");
+      }
+      setHealthColor(getColor(props.health / 100));
+    }, [props.health])
+
+    const healthBarStyle = {
+      position: 'fixed',
+      top: '1rem',
+      right: '15rem',
+      margin: '8rem 1rem 0 0',
+      padding: '1rem',
+      borderRadius: '1rem',
+      color: 'black',
+      border: '1px solid black',
+      opacity: 0.9,
+      backgroundColor: healthColor,
+    }
+
+    return (
+      <div style={healthBarStyle}>
+        <h3>Health: {props.health}</h3>
+      </div>
+    )
+  }
+
+  const EnergyBar = props => {
+    const [energyColor, setEnergyColor] = useState('blue');
+
+    useEffect(() => {
+      function getColor(value){
+        //value from 0 to 1
+        var hue=((value)*240).toString(10);
+        return ["hsl(",hue,",100%,50%)"].join("");
+      }
+      setEnergyColor(getColor(props.energy / 100));
+    }, [props.energy])
+
+    const energyBarStyle = {
+      position: 'fixed',
+      top: '1rem',
+      right: '31rem',
+      margin: '8rem 1rem 0 0',
+      padding: '1rem',
+      borderRadius: '1rem',
+      color: 'black',
+      border: '1px solid black',
+      opacity: 0.9,
+      backgroundColor: energyColor,
+    }
+    return (
+      <div style={energyBarStyle}>
+        <h3>Energy: {props.energy}</h3>
+      </div>
+    )
+  }
+
+  const Inventory = props => {
+    return (
+      <div style={styles.inventory}>
+        <h3>Inventory:</h3>
+        <ul>
+          {props.inventory.map((i) => {
+            return (
+              <li key={i}>{i}</li>
+            )
+          })}
+        </ul>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <StatusBar 
+        {...props}
+      />
+      <Inventory
+        {...props}
+      />
+    </>
+  )
+}
+
 function App() {
   const [searchParams] = useSearchParams();
   const [prompts, setPrompts] = useState([]);
@@ -72,16 +190,8 @@ function App() {
     },
   ];
 
-  // useEffect(() => {
-  //   if (searchParams.get('ai')) {
-  //     const aiIndex = parseInt(searchParams.get('ai'));
-  //     setAi(aiIndex);
-  //   }
-  // }, [searchParams]);
-
   useEffect(() => {
     handleClear();
-    console.log('ai: ' + ai);
   }, [ai])
   
   const advertisers = useMemo(() => {
@@ -154,7 +264,6 @@ function App() {
       // remove trailing characters after json object
       jsonStr = jsonStr.substring(0, jsonStr.indexOf('}') + 1);
       // parse json object
-      console.log(jsonStr)
       const obj = JSON.parse(jsonStr);
       // set ad link
       let newLinksArray = [...adLinks];
@@ -165,10 +274,6 @@ function App() {
       setResponses([...responses, ad]);
       setAdResponse('');
   }, [adResponse, prompts, responses]);
-
-  useEffect(() => {
-    console.log('adLinks: ' + adLinks[responses.length - 1]);
-  }, [adLinks]);
 
   // get response from api
   const getResponse = async (name, convo, prompt, aiIndex) => {
@@ -215,20 +320,24 @@ function App() {
 
   const createButtonsJSX = async (keys) => {
     const keyArray = await JSON.parse(keys);
-    console.log(keyArray[0].choice)
     const buttonsJSX = keyArray.map((k) => {
       return (
-        <button
+        <div
           key={k.choiceId}
           className="choiceButton"
           onClick={() => {
             window.handleChoiceClick(k.choiceId, k.gold, k.health, k.cost, k.item, k.energy, k.useItem);
           }}
-        >{k.buttonText}{k.cost ? ` (${k.cost} gold)` : ''}
-        </button>
+        >{k.buttonText}{k.cost ? ` (-${k.cost} gold)` : ''}{k.useItem ? ` (-${k.useItem})` : ''}
+        </div>
       );
     });
-    return buttonsJSX;
+    const fullButtonsJSX = (
+      <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+        {buttonsJSX}
+      </div>
+    );
+    return fullButtonsJSX;
   }
 
   const scrollToBottom = () => {
@@ -314,12 +423,16 @@ function App() {
   window.handleChoiceClick = (choice, goldUpdate, healthUpdate, cost, item, energyUpdate, loseItem) => {
     var totalGold = -cost || 0;
     if (cost) {
-      if (gold < cost) return toast('Not enough gold!', {
-        style: {
+      if (gold < cost) {  
+        setLoading(false);
+        toast('Not enough gold!', {
+          style: {
           background: 'gold',
           color: 'black',
-        },
-      });
+          },
+        });
+        return false;
+      }
       toast.error(`-${cost} gold`, {
         style: {
           background: 'gold',
@@ -365,7 +478,7 @@ function App() {
       }
       totalGold += goldUpdate;
     }
-    setGold(gold + totalGold);
+    setGold(gold + totalGold > 0 ? gold + totalGold : 0);
     if (item) {
       setInventory([...inventory, item]);
       toast.success(`You got a ${item}!`, {
@@ -376,6 +489,12 @@ function App() {
       });
     }
     if (loseItem) {
+      if (!inventory.includes(loseItem)) return toast.error(`You don't have a ${loseItem}!`, {
+        style: {
+          background: 'white',
+          color: 'black',
+        },
+      });
       const newInventory = inventory.filter(i => i !== loseItem);
       setInventory(newInventory);
       toast.success(`You used a ${loseItem}!`, {
@@ -412,39 +531,35 @@ function App() {
     }
   }, [health]);
 
-  const StatusBar = props => {
-    return (
-      <div style={styles.statusBar}>
-        <GoldBalance />
-        <HealthBar />
-        <EnergyBar />
-      </div>
-    )
+  
+
+  const localProps = {
+    handleSubmit,
+    handleNameChange,
+    handleClear,
+    handleAiChange,
+    aiUpdated,
+    ai,
+    name,
+    promptInput,
+    setPromptInput,
+    prompts,
+    responses,
+    loading,
+    convoActive,
+    inventory,
+    buttons,
+    setButtons,
+    setConvoActive,
+    setInventory,
+    setHealth,
+    setEnergy,
+    setGold,
+    health,
+    energy,
+    gold,
   }
 
-  const GoldBalance = props => {
-    return (
-      <div style={styles.goldBalance}>
-        <h3>Gold: {gold}</h3>
-      </div>
-    )
-  }
-
-  const HealthBar = props => {
-    return (
-      <div style={styles.healthBar}>
-        <h3>Health: {health}</h3>
-      </div>
-    )
-  }
-
-  const EnergyBar = props => {
-    return (
-      <div style={styles.energyBar}>
-        <h3>Energy: {energy}</h3>
-      </div>
-    )
-  }
 
   useEffect(() => {
     if (energy <= 0) {
@@ -465,20 +580,7 @@ function App() {
     }
   }, [energy]);
 
-  const Inventory = props => {
-    return (
-      <div style={styles.inventory}>
-        <h3>Inventory:</h3>
-        <ul>
-          {inventory.map((i) => {
-            return (
-              <li key={i}>{i}</li>
-            )
-          })}
-        </ul>
-      </div>
-    )
-  }
+  
 
   const Buttons = props => {
     return (
@@ -528,9 +630,7 @@ function App() {
           <div style={styles.clearButton} onClick={() => handleClear()}>Reset</div>
         </div>
         <div style={styles.mainContainer}>
-          {aiList[ai].name === 'Dungeon Master' ? <Inventory/> : null}
-          {aiList[ai].name === 'Dungeon Master' ? <StatusBar/> : null}
-
+          {aiList[ai].name === 'Dungeon Master' ? <DungeonMaster {...localProps}/> : null}
         <form onSubmit={handleSubmit}>
           {/* <div style={styles.nameInputContainer}>
             <label>
