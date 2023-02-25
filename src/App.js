@@ -448,38 +448,39 @@ function App() {
         }}
       />
       <header className="App-header">
-        <div style={{height: '8rem', position: 'fixed', top:0, left:0, width: '100vw', backgroundColor: "gray", zIndex: 50}}>
-          <h1>{aiList[ai].name}</h1>
-          <select value={ai} onChange={(e) => handleAiChange(e)}>
-            {aiList.map((ai, index) => (
-              <option key={index} value={index}>{ai.name}</option>
-            ))}
-          </select>
+        <div style={styles.navBar}>
+          <div style={styles.aiSelect}>
+            <select style={styles.aiDropdown} value={ai} onChange={(e) => handleAiChange(e)}>
+              {aiList.map((ai, index) => (
+                <option key={index} value={index}>{ai.name}</option>
+              ))}
+            </select>
+          </div>
+          <div style={styles.clearButton} onClick={() => handleClear()}>Clear</div>
         </div>
         <div style={styles.mainContainer}>
           {aiList[ai].name === 'Dungeon Master' ? <Inventory/> : null}
           {aiList[ai].name === 'Dungeon Master' ? <StatusBar/> : null}
 
         <form onSubmit={handleSubmit}>
-          <div style={styles.nameInputContainer}>
+          {/* <div style={styles.nameInputContainer}>
             <label>
               Name:{" "}
               <input type="text" value={name} onChange={handleNameChange}/>
             </label>
-          </div>
+          </div> */}
           <div style={styles.promptContainer}>
             {loading ? <LoadingAni /> : null}
             {ai === 6 && !loading ? <div style={{textAlign: 'center', width: '100vw'}}><Buttons /></div>: null}
             {ai !==6 &&
               <>
                 <label>
-                  <input id="promptInput" style={styles.promptInput} type="text" value={promptInput} onChange={(e) => setPromptInput(e.target.value)} />
+                  <input id="promptInput" style={styles.promptInput} type="text" value={promptInput} autocomplete="off" onChange={(e) => setPromptInput(e.target.value)} />
                 </label>
                 <input id="submitButton" style={styles.promptSubmit} type="submit" value="Submit" />
               </>
             }
           </div>
-          <div style={styles.clearButton} onClick={() => handleClear()}>Clear</div>
         </form>
         <div>
           {prompts.length === 0 && loading  && <LoadingAni />}
@@ -540,7 +541,33 @@ const styles = {
     borderRadius: '1rem',
     width: 'calc(100vw - 12rem)',
     minHeight: 'calc(50vh - 14rem)',
-
+  },
+  navBar: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '10rem',
+    backgroundColor: '#222',
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '0 2rem',
+    zIndex: 100,
+  },
+  aiSelect: {
+    margin: '0 2rem',
+  },
+  aiDropdown: {
+    width: '20rem',
+    height: '4rem',
+    fontSize: '2rem',
+    backgroundColor: 'white',
+    color: 'black',
+    border: 'none',
+    borderRadius: '1rem',
+    padding: '0 1rem',
   },
   promptContainer: {
     position: 'fixed',
@@ -555,7 +582,7 @@ const styles = {
     paddingLeft: '100px',
   },
   promptInput: {
-    width: 'calc(100vw - 300px)',
+    width: 'calc(100vw - 150px)',
     height: '4rem',
     border: 'none',
     fontSize: '1.5rem',
@@ -565,15 +592,20 @@ const styles = {
     margin: '1rem'
   },
   promptSubmit: {
+    position: 'fixed',
+    bottom: '0.25rem',
+    right: '1.25rem',
     width: '100px',
-    height: '4rem',
+    height: '3.5rem',
     border: 'none',
+    borderRadius: '1rem',
     fontSize: '1.5rem',
-    backgroundColor: 'white',
-    color: 'black',
+    backgroundColor: 'gray',
+    color: 'white',
     lineHeight: '1.5rem',
     margin: '1rem',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    zIndex: 150
   },
   nameInputContainer: {
     position: 'fixed',
@@ -593,13 +625,12 @@ const styles = {
     marginLeft: '0.75rem'
   },
   clearButton: {
-    position: 'fixed',
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    top: 0,
-    right: 0,
+    top: '2rem',
+    right: '2rem',
     border: 'none',
     fontSize: '1.5rem',
     backgroundColor: 'white',
