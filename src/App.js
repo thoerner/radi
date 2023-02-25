@@ -456,7 +456,7 @@ function App() {
               ))}
             </select>
           </div>
-          <div style={styles.clearButton} onClick={() => handleClear()}>Clear</div>
+          <div style={styles.clearButton} onClick={() => handleClear()}>Reset</div>
         </div>
         <div style={styles.mainContainer}>
           {aiList[ai].name === 'Dungeon Master' ? <Inventory/> : null}
@@ -633,11 +633,13 @@ const styles = {
     right: '2rem',
     border: 'none',
     fontSize: '1.5rem',
-    backgroundColor: 'white',
-    color: 'black',
-    lineHeight: '1.5rem',
+    backgroundColor: 'red',
+    opacity: 0.7,
+    borderRadius: '1rem',
+    color: 'white',
+    lineHeight: '1rem',
     margin: '1rem',
-    height: '4rem',
+    height: '3rem',
     width: '100px',
     cursor: 'pointer',
     zIndex: 100
