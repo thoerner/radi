@@ -23,6 +23,7 @@ function App() {
   const [buttons, setButtons] = useState(<div></div>);
   const [adTime, setAdTime] = useState(false);
   const [adResponse, setAdResponse] = useState('');
+  const [adLinks, setAdLinks] = useState([]);
   const [ai, setAi] = useState(0);
 
   const aiList = [
@@ -142,10 +143,30 @@ function App() {
 
   useEffect(() => {
     if (adResponse === '') return;
-    setPrompts([...prompts, "ad"]);
-    setResponses([...responses, adResponse]);
-    setAdResponse('');
+      setPrompts([...prompts, "ad"]);
+      // find start of json object
+      const start = adResponse.indexOf('{');
+      var jsonStr = adResponse.substring(start);
+      // strip html tags from json object
+      jsonStr = jsonStr.replace(/(<([^>]+)>)/gi, "");
+      // remove trailing characters after json object
+      jsonStr = jsonStr.substring(0, jsonStr.indexOf('}') + 1);
+      // parse json object
+      console.log(jsonStr)
+      const obj = JSON.parse(jsonStr);
+      // set ad link
+      let newLinksArray = [...adLinks];
+      newLinksArray[responses.length] = obj.link;
+      setAdLinks(newLinksArray);
+      // set ad response
+      let ad = adResponse.substring(0, start);
+      setResponses([...responses, ad]);
+      setAdResponse('');
   }, [adResponse, prompts, responses]);
+
+  useEffect(() => {
+    console.log('adLinks: ' + adLinks[responses.length - 1]);
+  }, [adLinks]);
 
   // get response from api
   const getResponse = async (name, convo, prompt, aiIndex) => {
@@ -425,7 +446,7 @@ function App() {
         }}
       />
       <header className="App-header">
-        <div style={{height: '8rem', position: 'fixed', top:0, left:0, width: '100vw', backgroundColor: "gray"}}>
+        <div style={{height: '8rem', position: 'fixed', top:0, left:0, width: '100vw', backgroundColor: "gray", zIndex: 50}}>
           <h1>{aiList[ai].name}</h1>
           <select value={ai} onChange={(e) => handleAiChange(e)}>
             {aiList.map((ai, index) => (
@@ -464,24 +485,37 @@ function App() {
             <div key={index}>
               {index !== 0 &&
                 <p style={styles.userPrompt}>{prompt !== 'ad' ? prompt : null }</p>}
-              <div style={prompt === 'ad' ? styles.aiAd : styles.aiRes}>
-                {prompt === 'ad' ? <div style={styles.aiAdBadge}>ad</div> : null}
-                <Typewriter
-                  options={{
-                    strings: [index < responses.length ? responses[index] : ''],
-                    autoStart: true,
-                    delay: 20,
-                    loop: false,
-                    deleteSpeed: Infinity,
-                    cursor: ''
-                  }}
-                />
-                {/* <Typed
-                  strings={[index < responses.length ? responses[index] : '']}
-                  typeSpeed={40}
-                  showCursor={false}
-                /> */}
-              </div>
+              {prompt === 'ad' && (
+                <a href={adLinks[index]} target="_blank" rel="noopener noreferrer">
+                  <div style={styles.aiAd}>
+                    <div style={styles.aiAdBadge}>ad</div>
+                    <Typewriter
+                      options={{
+                        strings: [index < responses.length ? responses[index] : ''],
+                        autoStart: true,
+                        delay: 10,
+                        loop: false,
+                        deleteSpeed: Infinity,
+                        cursor: ''
+                      }}
+                    />
+                  </div>
+                </a>
+              )}
+              {prompt !== 'ad' && (
+                <div style={styles.aiRes}>
+                  <Typewriter
+                    options={{
+                      strings: [index < responses.length ? responses[index] : ''],
+                      autoStart: true,
+                      delay: 20,
+                      loop: false,
+                      deleteSpeed: Infinity,
+                      cursor: ''
+                    }}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -547,7 +581,8 @@ const styles = {
     backgroundColor: 'black',
     padding: '1rem',
     borderRadius: '1rem',
-    color: 'white'
+    color: 'white',
+    zIndex: 100
   },
   loadingAnimation: {
     position: 'fixed',
@@ -572,6 +607,7 @@ const styles = {
     height: '4rem',
     width: '100px',
     cursor: 'pointer',
+    zIndex: 100
   },
   userPrompt: {
     color: 'yellow',

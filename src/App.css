@@ -38,6 +38,11 @@
   }
 }
 
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
 .choiceButton {
   background-color: #282c34;
   color: white;
