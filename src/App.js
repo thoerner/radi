@@ -121,10 +121,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    //display an ad every 4 minutes
+    //display an ad every 2.5 minutes
     const interval = setInterval(() => {
       setAdTime(true);
-    }, 10000);
+    }, 150000);
     return () => clearInterval(interval);
   }, []);
 
@@ -314,42 +314,92 @@ function App() {
   window.handleChoiceClick = (choice, goldUpdate, healthUpdate, cost, item, energyUpdate, loseItem) => {
     var totalGold = -cost || 0;
     if (cost) {
-      if (gold < cost) return toast('Not enough gold!');
-      toast.error(`-${cost} gold`)
+      if (gold < cost) return toast('Not enough gold!', {
+        style: {
+          background: 'gold',
+          color: 'black',
+        },
+      });
+      toast.error(`-${cost} gold`, {
+        style: {
+          background: 'gold',
+          color: 'black',
+        },
+      })
     }
     setPromptInput(choice);
     handleChoice(choice);
     if (healthUpdate) {
       if (healthUpdate > 0) {
-        toast.success(`+${healthUpdate} health`)
+        toast.success(`+${healthUpdate} health`, {
+          style: {
+            background: 'green',
+            color: 'white',
+          },
+        })
       } else {
-        toast.error(`${healthUpdate} health`)
+        toast.error(`${healthUpdate} health`, {
+          style: {
+            background: 'red',
+            color: 'white',
+          },
+        })
       }
       setHealth(health + healthUpdate);
     }
     if (goldUpdate) {
       if (goldUpdate > 0) {
-        toast.success(`+${goldUpdate} gold`)
+        toast.success(`+${goldUpdate} gold`, {
+          style: {
+            background: 'gold',
+            color: 'black',
+            },
+          })
       } else {
-        toast.error(`${goldUpdate} gold`)
+        toast.error(`${goldUpdate} gold`, {
+          style: {
+            background: 'gold',
+            color: 'black',
+          },
+        })
       }
       totalGold += goldUpdate;
     }
     setGold(gold + totalGold);
     if (item) {
       setInventory([...inventory, item]);
-      toast.success(`You got a ${item}!`);
+      toast.success(`You got a ${item}!`, {
+        style: {
+          background: 'white',
+          color: 'black',
+        },
+      });
     }
     if (loseItem) {
       const newInventory = inventory.filter(i => i !== loseItem);
       setInventory(newInventory);
-      toast.success(`You used a ${loseItem}!`);
+      toast.success(`You used a ${loseItem}!`, {
+        style: {
+          background: 'white',
+          color: 'black',
+        },
+      });
     }
     if (energyUpdate) {
       if (energyUpdate > 0) {
-        toast.success(`+${energyUpdate} energy`)
+        toast.success(`+${energyUpdate} energy`, {
+          style: {
+            background: 'blue',
+            color: 'white',
+          },
+        })
       } else {
-        toast.error(`${energyUpdate} energy`)
+        toast.error(`${energyUpdate} energy`, {
+          style: {
+            background: 'blue',
+            color: 'white',
+          },
+        })
       }
       setEnergy(energy + energyUpdate);
     }
@@ -396,6 +446,25 @@ function App() {
     )
   }
 
+  useEffect(() => {
+    if (energy <= 0) {
+      toast.error('You ran out of energy! -1/2 Health', {
+        style: {
+          background: 'red',
+          color: 'white',
+          },
+        });
+      toast.success('You are now rested. +100 energy', {
+        style: {
+          background: 'blue',
+          color: 'white',
+        },
+      });
+      setHealth(Math.floor(health / 2));
+      setEnergy(100);
+    }
+  }, [energy]);
+
   const Inventory = props => {
     return (
       <div style={styles.inventory}>
@@ -437,7 +506,7 @@ function App() {
   return (
     <div className="App">
       <Toaster 
-        position="bottom-center"
+        position="top-right"
         reverseOrder={false}
         toastOptions={{
           style: {
@@ -452,7 +521,7 @@ function App() {
           <div style={styles.aiSelect}>
             <select style={styles.aiDropdown} value={ai} onChange={(e) => handleAiChange(e)}>
               {aiList.map((ai, index) => (
-                <option key={index} value={index}>{ai.name}</option>
+                <option style={styles.aiOption} key={index} value={index}>{ai.name}</option>
               ))}
             </select>
           </div>
@@ -557,13 +626,24 @@ const styles = {
     zIndex: 100,
   },
   aiSelect: {
+    padding: '1rem',
     margin: '0 2rem',
   },
   aiDropdown: {
-    width: '20rem',
+    minWidth: '20rem',
     height: '4rem',
     fontSize: '2rem',
     backgroundColor: 'white',
+    textAlign: 'center',
+    color: 'black',
+    border: 'none',
+    borderRadius: '1rem',
+    padding: '0 1rem',
+  },
+  aiOption: {
+    fontSize: '1rem',
+    backgroundColor: 'white',
+    textAlign: 'center',
     color: 'black',
     border: 'none',
     borderRadius: '1rem',
@@ -681,7 +761,7 @@ const styles = {
     backgroundColor: 'red',
     padding: '1rem',
     borderRadius: '1rem',
-    color: 'black',
+    color: 'white',
     border: '1px solid black',
     opacity: 0.9
   },
@@ -693,7 +773,7 @@ const styles = {
     backgroundColor: 'blue',
     padding: '1rem',
     borderRadius: '1rem',
-    color: 'black',
+    color: 'white',
     border: '1px solid black',
     opacity: 0.9
   },
