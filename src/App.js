@@ -124,7 +124,7 @@ function App() {
     //display an ad every 4 minutes
     const interval = setInterval(() => {
       setAdTime(true);
-    }, 240000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -161,7 +161,7 @@ function App() {
       newLinksArray[responses.length] = obj.link;
       setAdLinks(newLinksArray);
       // set ad response
-      let ad = adResponse.substring(0, start);
+      let ad = uEmojiParser.parseToUnicode(adResponse.substring(0, start));
       setResponses([...responses, ad]);
       setAdResponse('');
   }, [adResponse, prompts, responses]);
