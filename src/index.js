@@ -6,7 +6,6 @@ import reportWebVitals from './reportWebVitals';
 import {
   Routes,
   Route,
-  useSearchParams,
   BrowserRouter
 } from "react-router-dom"
 

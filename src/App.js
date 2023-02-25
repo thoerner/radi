@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import './App.css';
 import Typewriter from 'typewriter-effect';
 import parse from 'html-react-parser';
@@ -21,6 +21,8 @@ function App() {
   const [inventory, setInventory] = useState([]);
   const [aiUpdated, setAiUpdated] = useState(false);
   const [buttons, setButtons] = useState(<div></div>);
+  const [adTime, setAdTime] = useState(false);
+  const [adResponse, setAdResponse] = useState('');
   const [ai, setAi] = useState(0);
 
   const aiList = [
@@ -80,6 +82,70 @@ function App() {
     handleClear();
     console.log('ai: ' + ai);
   }, [ai])
+  
+  const advertisers = useMemo(() => {
+    return [
+      "Coca-Cola", 
+      "Pepsi",
+      "McDonald's",
+      "Burger King",
+      "Wendy's",
+      "Taco Bell",
+      "KFC",
+      "Pizza Hut",
+      "Subway",
+      "Domino's",
+      "Starbucks",
+      "Dunkin'",
+      "Walmart",
+      "Target",
+      "Amazon",
+      "Apple",
+      "Google",
+      "Microsoft",
+      "Facebook",
+      "Twitter",
+      "Instagram",
+      "Snapchat",
+      "TikTok",
+      "Reddit",
+      "Twitch",
+      "YouTube",
+      "Netflix",
+      "Spotify",
+      "Hulu",
+      "Disney+",
+      "HBO Max",
+    ];
+  }, []);
+
+  useEffect(() => {
+    //display an ad every 4 minutes
+    const interval = setInterval(() => {
+      setAdTime(true);
+    }, 240000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const setAds = async () => {
+      const response = await getResponse(advertisers[Math.floor(Math.random() * advertisers.length)], convo, "ad", ai);
+      setAdResponse(response.response);
+    }
+    if (adTime) {
+      setAdTime(false);
+      if (ai !== 6) {
+        setAds();
+      }
+    }
+  }, [adTime]);
+
+  useEffect(() => {
+    if (adResponse === '') return;
+    setPrompts([...prompts, "ad"]);
+    setResponses([...responses, adResponse]);
+    setAdResponse('');
+  }, [adResponse, prompts, responses]);
 
   // get response from api
   const getResponse = async (name, convo, prompt, aiIndex) => {
@@ -397,8 +463,9 @@ function App() {
           {prompts.map((prompt, index) => (
             <div key={index}>
               {index !== 0 &&
-                <p style={styles.userPrompt}>{prompt}</p>}
-              <div>
+                <p style={styles.userPrompt}>{prompt !== 'ad' ? prompt : null }</p>}
+              <div style={prompt === 'ad' ? styles.aiAd : styles.aiRes}>
+                {prompt === 'ad' ? <div style={styles.aiAdBadge}>ad</div> : null}
                 <Typewriter
                   options={{
                     strings: [index < responses.length ? responses[index] : ''],
@@ -570,7 +637,35 @@ const styles = {
     color: 'black',
     border: '1px solid black',
     opacity: 0.9
+  },
+  aiRes: {
+    color: 'white',
+    fontSize: '1.5rem',
+    margin: '1rem'
+  },
+  aiAd: {
+    color: 'black',
+    fontSize: '1.5rem',
+    margin: '1rem',
+    backgroundColor: 'white',
+    padding: '1rem',
+    borderRadius: '1rem',
+    border: '1px solid blue',
+  },
+  aiAdBadge: {
+    position: 'relative',
+    backgroundColor: 'blue',
+    color: 'white',
+    padding: '0.5rem',
+    borderRadius: '0.5rem',
+    fontSize: '1rem',
+    margin: '0.5rem',
+    width: '1.5rem',
+    textAlign: 'center',
+    right: '0.5rem',
+    top: '0.5rem'
   }
+
 }
 
 export default App;
