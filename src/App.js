@@ -136,7 +136,9 @@ function App() {
     if (adTime) {
       setAdTime(false);
       if (ai !== 6) {
-        setAds();
+        if (prompts[prompts.length - 1] !== "ad") {
+          setAds();
+        }
       }
     }
   }, [adTime]);
