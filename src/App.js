@@ -61,7 +61,12 @@ function App() {
       name: 'The Oracle',
       intro: 'Introduce yourself.',
       index: 8
-    }   
+    },
+    {
+      name: 'Nikola Tesla',
+      intro: 'Introduce yourself.',
+      index: 9
+    },
   ];
 
   // useEffect(() => {
@@ -103,6 +108,7 @@ function App() {
     body.response = body.response.replace(/&gt;/g, '>');
     body.response = body.response.replace(/&quot;/g, '"');
     body.response = body.response.replace(/&#39;/g, '\'');
+    body.response = body.response.replace(/&amp;/g, '&');
     // body.response = body.response.replace(/""/g, '"');
     const endSymbol = body.response.indexOf('#');
     body.response = body.response.slice(0, endSymbol).trim();
