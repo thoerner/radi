@@ -1,128 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import './App.css';
 import Typewriter from 'typewriter-effect';
-import parse from 'html-react-parser';
 import { useSearchParams } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import uEmojiParser from 'universal-emoji-parser';
-
-const DungeonMaster = props => {
-
-
-
-  const StatusBar = props => {
-    return (
-      <div style={styles.statusBar}>
-        <GoldBalance 
-          {...props}
-        />
-        <HealthBar 
-          {...props}
-        />
-        <EnergyBar 
-          {...props}
-        />
-      </div>
-    )
-  }
-
-  const GoldBalance = props => {
-    return (
-      <div style={styles.goldBalance}>
-        <h3>Gold: {props.gold}</h3>
-      </div>
-    )
-  }
-
-  const HealthBar = props => {
-    const [healthColor, setHealthColor] = useState('green');
-
-    useEffect(() => {
-      function getColor(value){
-        //value from 0 to 1
-        var hue=((value)*120).toString(10);
-        return ["hsl(",hue,",100%,50%)"].join("");
-      }
-      setHealthColor(getColor(props.health / 100));
-    }, [props.health])
-
-    const healthBarStyle = {
-      position: 'fixed',
-      top: '1rem',
-      right: '15rem',
-      margin: '8rem 1rem 0 0',
-      padding: '1rem',
-      borderRadius: '1rem',
-      color: 'black',
-      border: '1px solid black',
-      opacity: 0.9,
-      backgroundColor: healthColor,
-    }
-
-    return (
-      <div style={healthBarStyle}>
-        <h3>Health: {props.health}</h3>
-      </div>
-    )
-  }
-
-  const EnergyBar = props => {
-    const [energyColor, setEnergyColor] = useState('blue');
-
-    useEffect(() => {
-      function getColor(value){
-        //value from 0 to 1
-        var hue=((value)*240).toString(10);
-        return ["hsl(",hue,",100%,50%)"].join("");
-      }
-      setEnergyColor(getColor(props.energy / 100));
-    }, [props.energy])
-
-    const energyBarStyle = {
-      position: 'fixed',
-      top: '1rem',
-      right: '31rem',
-      margin: '8rem 1rem 0 0',
-      padding: '1rem',
-      borderRadius: '1rem',
-      color: 'black',
-      border: '1px solid black',
-      opacity: 0.9,
-      backgroundColor: energyColor,
-    }
-    return (
-      <div style={energyBarStyle}>
-        <h3>Energy: {props.energy}</h3>
-      </div>
-    )
-  }
-
-  const Inventory = props => {
-    return (
-      <div style={styles.inventory}>
-        <h3>Inventory:</h3>
-        <ul>
-          {props.inventory.map((i) => {
-            return (
-              <li key={i}>{i}</li>
-            )
-          })}
-        </ul>
-      </div>
-    )
-  }
-
-  return (
-    <>
-      <StatusBar 
-        {...props}
-      />
-      <Inventory
-        {...props}
-      />
-    </>
-  )
-}
+import { DungeonMaster } from './components/DungeonMaster';
+import { PromptBar } from './components/PromptBar';
+import { scrollToBottom } from './utils/tools';
+import { useWindowDimensions } from './utils/tools';
 
 function App() {
   const [searchParams] = useSearchParams();
@@ -143,6 +28,13 @@ function App() {
   const [adResponse, setAdResponse] = useState('');
   const [adLinks, setAdLinks] = useState([]);
   const [ai, setAi] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  const { width } = useWindowDimensions();
+
+  useEffect(() => {
+    setIsMobile(width < 600);
+  }, []);
 
   const aiList = [
     {
@@ -188,12 +80,13 @@ function App() {
       intro: 'Introduce yourself.',
       index: 9
     },
+    {
+      name: 'Big Gay Al',
+      intro: 'Introduce yourself.',
+      index: 10
+    }
   ];
 
-  useEffect(() => {
-    handleClear();
-  }, [ai])
-  
   const advertisers = useMemo(() => {
     return [
       "Coca-Cola", 
@@ -230,52 +123,50 @@ function App() {
     ];
   }, []);
 
+  // ad timer
   useEffect(() => {
-    //display an ad every 2.5 minutes
     const interval = setInterval(() => {
       setAdTime(true);
     }, 150000);
     return () => clearInterval(interval);
   }, []);
 
+  // get and set ad
   useEffect(() => {
     const setAds = async () => {
       const response = await getResponse(advertisers[Math.floor(Math.random() * advertisers.length)], convo, "ad", ai);
       setAdResponse(response.response);
+      setLoading(false);
     }
     if (adTime) {
       setAdTime(false);
       if (ai !== 6) {
         if (prompts[prompts.length - 1] !== "ad") {
+          setLoading(true);
           setAds();
         }
       }
     }
   }, [adTime]);
 
+  // create response from ad
   useEffect(() => {
     if (adResponse === '') return;
       setPrompts([...prompts, "ad"]);
-      // find start of json object
       const start = adResponse.indexOf('{');
       var jsonStr = adResponse.substring(start);
-      // strip html tags from json object
       jsonStr = jsonStr.replace(/(<([^>]+)>)/gi, "");
-      // remove trailing characters after json object
       jsonStr = jsonStr.substring(0, jsonStr.indexOf('}') + 1);
-      // parse json object
       const obj = JSON.parse(jsonStr);
-      // set ad link
       let newLinksArray = [...adLinks];
       newLinksArray[responses.length] = obj.link;
       setAdLinks(newLinksArray);
-      // set ad response
       let ad = uEmojiParser.parseToUnicode(adResponse.substring(0, start));
       setResponses([...responses, ad]);
       setAdResponse('');
   }, [adResponse, prompts, responses]);
 
-  // get response from api
+  // get ai response from api
   const getResponse = async (name, convo, prompt, aiIndex) => {
     if (searchParams.get('ai') && !aiUpdated) {
       aiIndex = parseInt(searchParams.get('ai'));
@@ -295,22 +186,21 @@ function App() {
         aiIndex: aiIndex,
       }),
     });
-    const body = await response.json();
-    if (response.status !== 200) throw Error(body.message);
+    let body = await response.json();
+    if (response.status !== 200) return 'Error: ' + body.error;
 
     body.response = body.response.replace(/&lt;/g, '<');
     body.response = body.response.replace(/&gt;/g, '>');
     body.response = body.response.replace(/&quot;/g, '"');
     body.response = body.response.replace(/&#39;/g, '\'');
     body.response = body.response.replace(/&amp;/g, '&');
-    // body.response = body.response.replace(/""/g, '"');
-    const endSymbol = body.response.indexOf('|||');
+    let endSymbol = body.response.indexOf('|||');
     body.response = body.response.slice(0, endSymbol).trim();
     body.response = uEmojiParser.parseToUnicode(body.response);
     if (ai === 6) {
-      const keyStart = body.response.indexOf('[{');
-      const keyEnd = body.response.indexOf('}]') + 2;
-      const keyList = body.response.slice(keyStart, keyEnd);
+      let keyStart = body.response.indexOf('[{');
+      let keyEnd = body.response.indexOf('}]') + 2;
+      let keyList = body.response.slice(keyStart, keyEnd);
       body.response = body.response.replace(keyList, '');
       setButtons(await createButtonsJSX(keyList));
     }
@@ -320,28 +210,24 @@ function App() {
 
   const createButtonsJSX = async (keys) => {
     const keyArray = await JSON.parse(keys);
-    const buttonsJSX = keyArray.map((k) => {
-      return (
-        <div
-          key={k.choiceId}
-          className="choiceButton"
-          onClick={() => {
-            window.handleChoiceClick(k.choiceId, k.gold, k.health, k.cost, k.item, k.energy, k.useItem);
-          }}
-        >{k.buttonText}{k.cost ? ` (-${k.cost} gold)` : ''}{k.useItem ? ` (-${k.useItem})` : ''}
-        </div>
-      );
-    });
-    const fullButtonsJSX = (
+    const buttonJsx = (
       <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
-        {buttonsJSX}
+        {keyArray.map((k) => {
+          return (
+            <div
+              key={k.choiceId}
+              className="choiceButton"
+              onClick={() => {
+                window.handleChoiceClick(k.choiceId, k.gold, k.health, k.cost, k.item, k.energy, k.useItem);
+              }}
+            >
+              {k.buttonText}{k.cost ? ` (-${k.cost} gold)` : ''}{k.useItem ? ` (-${k.useItem})` : ''}
+            </div>
+          );
+        })}
       </div>
     );
-    return fullButtonsJSX;
-  }
-
-  const scrollToBottom = () => {
-    window.scrollTo(0, document.body.scrollHeight);
+    return buttonJsx;
   }
 
   const getConvo = async (seed) => {
@@ -362,16 +248,27 @@ function App() {
       setLoading(true);
       let seed = Math.floor(Math.random() * 1000000000);
       getConvo(seed);
-    } else {
     }
   }, [convoActive]);
 
   useEffect(() => {
-    scrollToBottom();
+    setTimeout(() => {
+      scrollToBottom();
+    }, 500);
   }, [prompts]);
+
+  useEffect(() => {
+    handleClear();
+    if (!convoActive) {
+      setLoading(true);
+      let seed = Math.floor(Math.random() * 1000000000);
+      getConvo(seed);
+    }
+  }, [ai])
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     const prompt = promptInput;
     setPromptInput('');
     setPrompts([...prompts, prompt]);
@@ -384,10 +281,6 @@ function App() {
       scrollToBottom();
     }, 100);
   };
-
-  useEffect(() => {
-    console.log(convo)
-  }, [convo])
 
   const handleNameChange = (e) => {
     setName(e.target.value);
@@ -406,19 +299,80 @@ function App() {
     setConvoActive(false);
   };
 
-  const LoadingAni = () => {
-    return (
-      <div style={styles.loadingAnimation}>
-        <div className="lds-grid"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-      </div>
-    )
-  }
-
   const handleAiChange = (e) => {
     setAiUpdated(true);
-    console.log(e.target.value)
     setAi(Number(e.target.value));
   }
+
+  const appProps = {
+    handleSubmit,
+    handleNameChange,
+    handleClear,
+    handleAiChange,
+    aiUpdated,
+    ai,
+    name,
+    promptInput,
+    setPromptInput,
+    prompts,
+    responses,
+    loading,
+    convoActive,
+    inventory,
+    buttons,
+    setButtons,
+    setConvoActive,
+    setInventory,
+    setHealth,
+    setEnergy,
+    setGold,
+    health,
+    energy,
+    gold,
+    styles
+  }
+
+  // Dungeon Master Logic
+
+  useEffect(() => {
+    if (energy <= 0) {
+      toast.error('You ran out of energy! -1/2 Health', {
+        style: {
+          background: 'red',
+          color: 'white',
+          },
+        });
+      toast.success('You are now rested. +100 energy', {
+        style: {
+          background: 'blue',
+          color: 'white',
+        },
+      });
+      setHealth(Math.floor(health / 2));
+      setEnergy(100);
+    }
+  }, [energy]);
+
+  useEffect(() => {
+    if (health <= 0) {
+      toast('You died!');
+      handleClear();
+    }
+  }, [health]);
+
+  const handleChoice = async (choice) => {
+    const prompt = choice;
+    setPromptInput('');
+    setPrompts([...prompts, prompt]);
+    setLoading(true);
+    const response = await getResponse(name, convo, prompt, ai);
+    setResponses([...responses, response.response]);
+    setConvo(response.convo);
+    setLoading(false);
+    setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+  };
 
   window.handleChoiceClick = (choice, goldUpdate, healthUpdate, cost, item, energyUpdate, loseItem) => {
     var totalGold = -cost || 0;
@@ -524,86 +478,6 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    if (health <= 0) {
-      toast('You died!');
-      handleClear();
-    }
-  }, [health]);
-
-  
-
-  const localProps = {
-    handleSubmit,
-    handleNameChange,
-    handleClear,
-    handleAiChange,
-    aiUpdated,
-    ai,
-    name,
-    promptInput,
-    setPromptInput,
-    prompts,
-    responses,
-    loading,
-    convoActive,
-    inventory,
-    buttons,
-    setButtons,
-    setConvoActive,
-    setInventory,
-    setHealth,
-    setEnergy,
-    setGold,
-    health,
-    energy,
-    gold,
-  }
-
-
-  useEffect(() => {
-    if (energy <= 0) {
-      toast.error('You ran out of energy! -1/2 Health', {
-        style: {
-          background: 'red',
-          color: 'white',
-          },
-        });
-      toast.success('You are now rested. +100 energy', {
-        style: {
-          background: 'blue',
-          color: 'white',
-        },
-      });
-      setHealth(Math.floor(health / 2));
-      setEnergy(100);
-    }
-  }, [energy]);
-
-  
-
-  const Buttons = props => {
-    return (
-      <div style={styles.buttons}>
-        {buttons}
-      </div>
-    )
-  }
-
-  const handleChoice = async (choice) => {
-    const prompt = choice;
-    setPromptInput('');
-    setPrompts([...prompts, prompt]);
-    setLoading(true);
-    const response = await getResponse(name, convo, prompt, ai);
-    setResponses([...responses, response.response]);
-    setConvo(response.convo);
-    setLoading(false);
-    setTimeout(() => {
-      scrollToBottom();
-    }, 100);
-  };
-
 
   return (
     <div className="App">
@@ -619,78 +493,58 @@ function App() {
         }}
       />
       <header className="App-header">
-        <div style={styles.navBar}>
-          <div style={styles.aiSelect}>
-            <select style={styles.aiDropdown} value={ai} onChange={(e) => handleAiChange(e)}>
+        <div style={isMobile ? styles.navBarMobile : styles.navBar}>
+          <div style={isMobile ? styles.aiSelectMobile : styles.aiSelect}>
+            <select style={isMobile ? styles.aiDropdownMobile : styles.aiDropdown} value={ai} onChange={(e) => handleAiChange(e)}>
               {aiList.map((ai, index) => (
-                <option style={styles.aiOption} key={index} value={index}>{ai.name}</option>
+                <option style={isMobile ? styles.aiOptionMobile : styles.aiOption} key={index} value={index}>{ai.name}</option>
               ))}
             </select>
           </div>
-          <div style={styles.clearButton} onClick={() => handleClear()}>Reset</div>
+          <div style={isMobile ? styles.clearButtonMobile : styles.clearButton} onClick={() => handleClear()}>♺</div>
         </div>
         <div style={styles.mainContainer}>
-          {aiList[ai].name === 'Dungeon Master' ? <DungeonMaster {...localProps}/> : null}
-        <form onSubmit={handleSubmit}>
-          {/* <div style={styles.nameInputContainer}>
-            <label>
-              Name:{" "}
-              <input type="text" value={name} onChange={handleNameChange}/>
-            </label>
-          </div> */}
-          <div style={styles.promptContainer}>
-            {loading ? <LoadingAni /> : null}
-            {ai === 6 && !loading ? <div style={{textAlign: 'center', width: '100vw'}}><Buttons /></div>: null}
-            {ai !==6 &&
-              <>
-                <label>
-                  <input id="promptInput" style={styles.promptInput} type="text" value={promptInput} autocomplete="off" onChange={(e) => setPromptInput(e.target.value)} />
-                </label>
-                <input id="submitButton" style={styles.promptSubmit} type="submit" value="Submit" />
-              </>
-            }
-          </div>
-        </form>
-        <div>
-          {prompts.length === 0 && loading  && <LoadingAni />}
-          {prompts.map((prompt, index) => (
-            <div key={index}>
-              {index !== 0 &&
-                <p style={styles.userPrompt}>{prompt !== 'ad' ? prompt : null }</p>}
-              {prompt === 'ad' && (
-                <a href={adLinks[index]} target="_blank" rel="noopener noreferrer">
-                  <div style={styles.aiAd}>
-                    <div style={styles.aiAdBadge}>ad</div>
+          {aiList[ai].name === 'Dungeon Master' ? <DungeonMaster {...appProps}/> : null}
+          <PromptBar {...appProps}/>
+          <div style={styles.mainCard}>
+            {prompts.map((prompt, index) => (
+              <div key={index}>
+                {index !== 0 &&
+                  <p style={isMobile ? styles.userPromptMobile : styles.userPrompt}>{prompt !== 'ad' ? prompt : null }</p>}
+                {prompt === 'ad' && (
+                  <a href={adLinks[index]} target="_blank" rel="noopener noreferrer">
+                    <div style={isMobile ? styles.aiAdMobile : styles.aiAd}>
+                      <div style={styles.aiAdBadge}>ad</div>
+                      <Typewriter
+                        options={{
+                          strings: [index < responses.length ? responses[index] : ''],
+                          autoStart: true,
+                          delay: 10,
+                          loop: false,
+                          deleteSpeed: Infinity,
+                          cursor: ''
+                        }}
+                      />
+                    </div>
+                  </a>
+                )}
+                {prompt !== 'ad' && (
+                  <div style={isMobile ? styles.aiResMobile : styles.aiRes}>
                     <Typewriter
                       options={{
                         strings: [index < responses.length ? responses[index] : ''],
                         autoStart: true,
-                        delay: 10,
+                        delay: 20,
                         loop: false,
                         deleteSpeed: Infinity,
                         cursor: ''
                       }}
                     />
                   </div>
-                </a>
-              )}
-              {prompt !== 'ad' && (
-                <div style={styles.aiRes}>
-                  <Typewriter
-                    options={{
-                      strings: [index < responses.length ? responses[index] : ''],
-                      autoStart: true,
-                      delay: 20,
-                      loop: false,
-                      deleteSpeed: Infinity,
-                      cursor: ''
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </header>
       <div style={{height: '4rem'}}></div>
@@ -698,29 +552,54 @@ function App() {
   );
 }
 
-// prompt should be fixed to bottom of screen
 const styles = {
   mainContainer: {
+    position: 'fixed',
+    top: '6rem',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'flex-start',
-    margin: '10rem 2rem 4rem 2rem',
-    backgroundColor: '#111',
-    padding: '1rem',
+    backgroundColor: 'white',
+    padding: '0.5rem',
     borderRadius: '1rem',
-    width: 'calc(100vw - 12rem)',
-    minHeight: 'calc(50vh - 14rem)',
+    width: '95vw',
+    height: 'calc(100vh - 15rem)',
+  },
+  mainCard: {
+    display: 'fixed',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    backgroundColor: '#111',
+    padding: '0.5rem',
+    borderRadius: '1rem',
+    height: 'calc(100vh - 16rem)',
+    overflowY: 'scroll',
   },
   navBar: {
     position: 'fixed',
     top: 0,
     left: 0,
     width: '100vw',
-    height: '10rem',
+    height: '5rem',
     backgroundColor: '#222',
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: '0',
+    zIndex: 100,
+  },
+  navBarMobile: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '5rem',
+    backgroundColor: '#222',
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     padding: '0 2rem',
     zIndex: 100,
@@ -729,10 +608,24 @@ const styles = {
     padding: '1rem',
     margin: '0 2rem',
   },
+  aiSelectMobile: {
+    margin: '0',
+  },
   aiDropdown: {
     minWidth: '20rem',
     height: '4rem',
     fontSize: '2rem',
+    backgroundColor: 'white',
+    textAlign: 'center',
+    color: 'black',
+    border: 'none',
+    borderRadius: '1rem',
+    padding: '0 1rem',
+  },
+  aiDropdownMobile: {
+    maxWidth: '66vw',
+    height: '4rem',
+    fontSize: '1.5rem',
     backgroundColor: 'white',
     textAlign: 'center',
     color: 'black',
@@ -749,6 +642,15 @@ const styles = {
     borderRadius: '1rem',
     padding: '0 1rem',
   },
+  aiOptionMobile: {
+    fontSize: '1rem',
+    backgroundColor: 'white',
+    textAlign: 'center',
+    color: 'black',
+    border: 'none',
+    borderRadius: '1rem',
+    padding: '0 1rem',
+  },
   promptContainer: {
     position: 'fixed',
     display: 'flex',
@@ -757,7 +659,7 @@ const styles = {
     bottom: 0,
     left: 0,
     width: 'calc(100vw - 100px)',
-    minHeight: '6rem',
+    height: '6rem',
     backgroundColor: 'black',
     paddingLeft: '100px',
   },
@@ -782,7 +684,7 @@ const styles = {
     fontSize: '1.5rem',
     backgroundColor: 'gray',
     color: 'white',
-    lineHeight: '1.5rem',
+    lineHeight: '3.5rem',
     margin: '1rem',
     cursor: 'pointer',
     zIndex: 150
@@ -798,12 +700,7 @@ const styles = {
     color: 'white',
     zIndex: 100
   },
-  loadingAnimation: {
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    marginLeft: '0.75rem'
-  },
+  
   clearButton: {
     display: 'flex',
     flexDirection: 'row',
@@ -820,13 +717,34 @@ const styles = {
     lineHeight: '1rem',
     margin: '1rem',
     height: '3rem',
-    width: '100px',
+    width: '50px',
+    cursor: 'pointer',
+    zIndex: 100
+  },
+  clearButtonMobile: {
+    position: 'fixed',
+    top: '1rem',
+    right: '1rem',
+    border: 'none',
+    fontSize: '1.5rem',
+    backgroundColor: 'red',
+    opacity: 0.7,
+    borderRadius: '1rem',
+    color: 'white',
+    lineHeight: '3rem',
+    width: '50px',
+    height: '50px',
     cursor: 'pointer',
     zIndex: 100
   },
   userPrompt: {
     color: 'yellow',
     fontSize: '1.5rem',
+    margin: '1rem'
+  },
+  userPromptMobile: {
+    color: 'yellow',
+    fontSize: '1rem',
     margin: '1rem'
   },
   statusbar: {
@@ -890,13 +808,39 @@ const styles = {
     opacity: 0.9
   },
   aiRes: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    alignSelf: 'flex-start',
     color: 'white',
     fontSize: '1.5rem',
-    margin: '1rem'
+    margin: '1rem',
+    alignText: 'left'
+  },
+  aiResMobile: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    alignSelf: 'flex-start',
+    color: 'white',
+    fontSize: '1rem',
+    margin: '1rem',
+    alignText: 'left'
   },
   aiAd: {
     color: 'black',
     fontSize: '1.5rem',
+    margin: '1rem',
+    backgroundColor: 'white',
+    padding: '1rem',
+    borderRadius: '1rem',
+    border: '1px solid blue',
+  },
+  aiAdMobile: {
+    color: 'black',
+    fontSize: '1rem',
     margin: '1rem',
     backgroundColor: 'white',
     padding: '1rem',
