@@ -30,15 +30,25 @@ export const PromptBar = props => {
   
     return (
       <form onSubmit={handleSubmit}>
-            <div style={isMobile? styles.promptContainerMobile : props.styles.promptContainer}>
+            <div style={isMobile? styles.promptContainerMobile : styles.promptContainer}>
               {loading && !isMobile ? <LoadingAni styles={props.styles}/> : null}
               {ai === 6 && !loading ? <div style={{textAlign: 'center', width: '100vw'}}><Buttons {...props} /></div>: null}
               {ai !==6 &&
                 <>
-                  <label>
-                    <input id="promptInput" style={isMobile ? styles.promptInputMobile : props.styles.promptInput} type="text" value={promptInput} autoComplete="off" onChange={(e) => setPromptInput(e.target.value)} />
-                  </label>
-                  <span id="submitButton" style={isMobile ? styles.promptSubmitMobile : props.styles.promptSubmit} onClick={handleSubmit}>{submitButtonValue}</span>
+                  <span style={isMobile ? styles.promptMobile : styles.prompt}>
+                    <textarea id="promptInput" 
+                        style={isMobile ? styles.promptInputMobile : styles.promptInput} 
+                        value={promptInput} 
+                        autoComplete="off" 
+                        rows="1"
+                        onChange={(e) => setPromptInput(e.target.value)} 
+                    />
+                  </span> 
+                  <span id="submitButton" 
+                        style={isMobile ? styles.promptSubmitMobile : styles.promptSubmit} onClick={handleSubmit}
+                  >
+                    {submitButtonValue}
+                  </span>
                 </>
               }
             </div>
@@ -61,18 +71,57 @@ const styles = {
         padding: '1rem',
         boxSizing: 'border-box',
     },
-    promptInputMobile: {
+    promptMobile: {
+        display: 'flex',
+        justifyContent: 'flex-start',
         width: '96vw',
         height: '2rem',
         fontSize: '1rem',
         fontWeight: '400',
-        padding: '0.5rem',
         boxSizing: 'border-box',
         borderRadius: '0.5rem',
         border: 'none',
         backgroundColor: 'white',
         color: 'black',
         outline: 'none',
+    },
+    prompt: {
+        display: 'flex',
+        justifyContent: 'flex-start',
+        width: 'calc(100vw - 150px)',
+        height: '3rem',
+        border: 'none',
+        borderRadius: '0.5rem',
+        padding: '0.25rem',
+        backgroundColor: 'white',
+        color: 'black',
+        margin: '1rem'
+    },
+    promptInput: {
+        padding: '0 0.5rem',
+        width: '84vw',
+        height: '3rem',
+        border: 'none',
+        fontSize: '1.5rem',
+        backgroundColor: 'white',
+        color: 'black',
+        lineHeight: '3rem',
+        msOverflowStyle: 'none',  /* IE and Edge */
+        scrollbarWidth: 'none',  /* Firefox */
+    },
+    promptInputMobile: {
+        width: '86vw',
+        height: '1.8rem',
+        fontSize: '1rem',
+        lineHeight: '1rem',
+        fontWeight: '400',
+        padding: '0.5rem',
+        boxSizing: 'border-box',
+        backgroundColor: 'transparent',
+        borderRadius: '0.5rem',
+        color: 'black',
+        outline: 'none',
+        border: 'none',
     },
     promptSubmitMobile: {
         position: 'fixed',
@@ -87,4 +136,33 @@ const styles = {
         cursor: 'pointer',
         zIndex: '150',
     },
+    promptContainer: {
+        position: 'fixed',
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        bottom: 0,
+        left: 0,
+        width: 'calc(100vw - 100px)',
+        height: '6rem',
+        backgroundColor: 'black',
+        paddingLeft: '100px',
+      },
+      
+      promptSubmit: {
+        position: 'fixed',
+        bottom: '0.75rem',
+        right: '1.25rem',
+        width: '100px',
+        height: '3rem',
+        border: 'none',
+        borderRadius: '1rem',
+        fontSize: '1.5rem',
+        backgroundColor: '#0077ff',
+        color: 'white',
+        lineHeight: '3rem',
+        margin: '1rem',
+        cursor: 'pointer',
+        zIndex: 150
+      },
 }
