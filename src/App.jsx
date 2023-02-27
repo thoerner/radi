@@ -168,7 +168,7 @@ function App() {
   useEffect(() => {
     const interval = setInterval(() => {
       setAdTime(true);
-    }, 150000);
+    }, 150000); // 2.5 minutes, 150000
     return () => clearInterval(interval);
   }, []);
 
@@ -215,18 +215,33 @@ function App() {
       setAiUpdated(true);
       return;
     }
-    const response = await fetch('https://radi-api.crypt0potam.us/api', {
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: name,
-        convo: convo,
-        prompt: prompt,
-        aiIndex: aiIndex,
-      }),
-    });
+    var response = '';
+    if (prompt === "ad") {
+      response = await fetch('https://radi-api.crypt0potam.us/api/ad', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          aiIndex: aiIndex,
+        }),
+      });
+    } else {
+      
+      response = await fetch('https://radi-api.crypt0potam.us/api', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name,
+          convo: convo,
+          prompt: prompt,
+          aiIndex: aiIndex,
+        }),
+      });
+
+    }
     let body = await response.json();
     if (response.status !== 200) return 'Error: ' + body.error;
 
@@ -314,14 +329,12 @@ function App() {
         setRoaming(true);
       } else if (currentScrollPos < prevScrollPos) {
         // scrolling down
-        console.log("scrolling up");
         setRoaming(true);
       }
       prevScrollPos = currentScrollPos;
 
       if (mainCardElement.scrollTop + mainCardElement.clientHeight >= mainCardElement.scrollHeight) {
         // reached end of scrolling
-        console.log("reached end of scrolling");
         setRoaming(false);
       }
     }
@@ -640,7 +653,7 @@ function App() {
 const styles = {
   mainContainer: {
     position: 'relative',
-    backgroundColor: 'white',
+    backgroundColor: 'transparent',
     padding: '0.5rem',
     borderRadius: '1rem',
     width: '95vw',
@@ -650,7 +663,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
-    backgroundColor: '#111',
+    backgroundColor: 'transparent',
     padding: '0.5rem',
     borderRadius: '1rem',
     width: 'calc(95vw - 1rem)',
