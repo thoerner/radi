@@ -86,6 +86,11 @@ function App() {
       intro: 'Introduce yourself.',
       index: 11
     },
+    {
+      name: 'The Goat Gaud',
+      intro: 'Introduce yourself.',
+      index: 12
+    }
   ];
 
   // start ad timer and set scroll detector, triggered on component mount
