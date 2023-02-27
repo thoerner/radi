@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import './App.css';
 import Typewriter from 'typewriter-effect';
 import { useSearchParams } from 'react-router-dom';
@@ -6,8 +6,43 @@ import toast, { Toaster } from 'react-hot-toast';
 import uEmojiParser from 'universal-emoji-parser';
 import { DungeonMaster } from './components/DungeonMaster';
 import { PromptBar } from './components/PromptBar';
-import { scrollToBottom } from './utils/tools';
 import { useWindowDimensions } from './utils/tools';
+
+function scrollToBottom() {
+  const mainCardElement = document.getElementById('mainCard');
+  mainCardElement.scrollTop = mainCardElement.scrollHeight;
+}
+
+function useInterval(callback, delay) {
+  const intervalRef = useRef();
+  const callbackRef = useRef(callback);
+
+  // Remember the latest callback:
+  //
+  // Without this, if you change the callback, when setInterval ticks again, it
+  // will still call your old callback.
+  //
+  // If you add `callback` to useEffect's deps, it will work fine but the
+  // interval will be reset.
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
+  // Set up the interval:
+
+  useEffect(() => {
+    if (typeof delay === 'number') {
+      intervalRef.current = window.setInterval(() => callbackRef.current(), delay);
+
+      // Clear interval if the components is unmounted or the delay changes:
+      return () => window.clearInterval(intervalRef.current);
+    }
+  }, [delay]);
+  
+  // Returns a ref to the interval ID in case you want to clear it manually:
+  return intervalRef;
+}
 
 function App() {
   const [searchParams] = useSearchParams();
@@ -29,6 +64,7 @@ function App() {
   const [adLinks, setAdLinks] = useState([]);
   const [ai, setAi] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [roaming, setRoaming] = useState(false);
 
   const { width } = useWindowDimensions();
 
@@ -256,11 +292,42 @@ function App() {
     }
   }, [convoActive]);
 
+  
+  // scroll to bottom of chat
+  const intervalRef = useInterval(() => {
+    if (!roaming) {
+      const mainCardElement = document.getElementById('mainCard');
+      mainCardElement.scrollTop = mainCardElement.scrollHeight;
+    } else {
+      // window.clearInterval(intervalRef.current);
+    }
+  }, 500);
+  
+  // detect when user has scrolled
   useEffect(() => {
-    setTimeout(() => {
-      scrollToBottom();
-    }, 500);
-  }, [prompts]);
+    var mainCardElement = document.getElementById('mainCard');
+    let prevScrollPos = mainCardElement.scrollTop;
+    const handleScroll = () => {
+      const currentScrollPos = mainCardElement.scrollTop;
+      if (currentScrollPos > prevScrollPos) {
+        // scrolling up
+        setRoaming(true);
+      } else if (currentScrollPos < prevScrollPos) {
+        // scrolling down
+        console.log("scrolling up");
+        setRoaming(true);
+      }
+      prevScrollPos = currentScrollPos;
+
+      if (mainCardElement.scrollTop + mainCardElement.clientHeight >= mainCardElement.scrollHeight) {
+        // reached end of scrolling
+        console.log("reached end of scrolling");
+        setRoaming(false);
+      }
+    }
+    mainCardElement.addEventListener('scroll', handleScroll);
+    return () => mainCardElement.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     handleClear();
@@ -270,6 +337,8 @@ function App() {
       getConvo(seed);
     }
   }, [ai])
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -378,6 +447,10 @@ function App() {
       scrollToBottom();
     }, 100);
   };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [prompts, responses]);
 
   window.handleChoiceClick = (choice, goldUpdate, healthUpdate, cost, item, energyUpdate, loseItem) => {
     var totalGold = -cost || 0;
@@ -489,7 +562,7 @@ function App() {
 
 
   return (
-    <div className="App">
+    <div>
       <Toaster 
         position="top-right"
         reverseOrder={false}
@@ -501,7 +574,7 @@ function App() {
           },
         }}
       />
-      <header className="App-header">
+      <div className="App">
         <div style={isMobile ? styles.navBarMobile : styles.navBar}>
           <div style={isMobile ? styles.aiSelectMobile : styles.aiSelect}>
             <select style={isMobile ? styles.aiDropdownMobile : styles.aiDropdown} value={ai} onChange={(e) => handleAiChange(e)}>
@@ -515,11 +588,15 @@ function App() {
         <div style={styles.mainContainer}>
           {aiList[ai].name === 'Dungeon Master' ? <DungeonMaster {...appProps}/> : null}
           <PromptBar {...appProps}/>
-          <div style={styles.mainCard}>
+          <div style={styles.mainCard} id="mainCard">
+            <div style={{flex: '1 1 auto'}}></div>
             {prompts.map((prompt, index) => (
-              <span key={index}>
+              <div style={styles.cardContent} key={index}>
                 {index !== 0 &&
-                  <p style={isMobile ? styles.userPromptMobile : styles.userPrompt}>{prompt !== 'ad' ? prompt : null }</p>}
+                  <>
+                    <p style={isMobile ? styles.userPromptMobile : styles.userPrompt}>{prompt !== 'ad' ? prompt : null }</p>
+                  </>
+                }
                 {prompt === 'ad' && (
                   <a href={adLinks[index]} target="_blank" rel="noopener noreferrer">
                     <div style={isMobile ? styles.aiAdMobile : styles.aiAd}>
@@ -543,7 +620,7 @@ function App() {
                       options={{
                         strings: [index < responses.length ? responses[index] : ''],
                         autoStart: true,
-                        delay: 20,
+                        delay: 10,
                         loop: false,
                         deleteSpeed: Infinity,
                         cursor: null
@@ -551,22 +628,18 @@ function App() {
                     />
                   </div>
                 )}
-              </span>
+              </div>
             ))}
           </div>
         </div>
-      </header>
+      </div>
     </div>
   );
 }
 
 const styles = {
   mainContainer: {
-    position: 'fixed',
-    top: '6rem',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
+    position: 'relative',
     backgroundColor: 'white',
     padding: '0.5rem',
     borderRadius: '1rem',
@@ -576,14 +649,71 @@ const styles = {
   mainCard: {
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    position: 'relative',
     backgroundColor: '#111',
     padding: '0.5rem',
     borderRadius: '1rem',
+    width: 'calc(95vw - 1rem)',
+    overflowY: 'auto',
     height: 'calc(100vh - 16rem)',
-    overflowY: 'scroll',
   },
+  cardContent: {
+    width: '100%',
+    minHeight: 'fit-content',
+  }, 
+
+  userPrompt: {
+    color: 'yellow',
+    fontSize: '1.5rem',
+  },
+  userPromptMobile: {
+    color: 'yellow',
+    fontSize: '1rem',
+  },
+
+  aiRes: {
+    color: 'white',
+    fontSize: '1.5rem',
+    width: '90vw',
+  },
+  aiResMobile: {
+    color: 'white',
+    fontSize: '1rem',
+    width: '90vw',
+  },
+
+  aiAd: {
+    color: 'black',
+    fontSize: '1.5rem',
+    margin: '1rem',
+    backgroundColor: 'white',
+    padding: '1rem',
+    borderRadius: '1rem',
+    border: '1px solid blue',
+  },
+  aiAdMobile: {
+    color: 'black',
+    fontSize: '1rem',
+    margin: '1rem',
+    backgroundColor: 'white',
+    padding: '1rem',
+    borderRadius: '1rem',
+    border: '1px solid blue',
+  },
+  aiAdBadge: {
+    position: 'relative',
+    backgroundColor: 'blue',
+    color: 'white',
+    padding: '0.5rem',
+    borderRadius: '0.5rem',
+    fontSize: '1rem',
+    margin: '0.5rem',
+    width: '1.5rem',
+    textAlign: 'center',
+    right: '0.5rem',
+    top: '0.5rem'
+  },
+
   navBar: {
     position: 'fixed',
     top: 0,
@@ -659,44 +789,7 @@ const styles = {
     borderRadius: '1rem',
     padding: '0 1rem',
   },
-  promptContainer: {
-    position: 'fixed',
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    bottom: 0,
-    left: 0,
-    width: 'calc(100vw - 100px)',
-    height: '6rem',
-    backgroundColor: 'black',
-    paddingLeft: '100px',
-  },
-  promptInput: {
-    width: 'calc(100vw - 150px)',
-    height: '4rem',
-    border: 'none',
-    fontSize: '1.5rem',
-    backgroundColor: 'white',
-    color: 'black',
-    lineHeight: '1.5rem',
-    margin: '1rem'
-  },
-  promptSubmit: {
-    position: 'fixed',
-    bottom: '0.25rem',
-    right: '1.25rem',
-    width: '100px',
-    height: '3.5rem',
-    border: 'none',
-    borderRadius: '1rem',
-    fontSize: '1.5rem',
-    backgroundColor: 'gray',
-    color: 'white',
-    lineHeight: '3.5rem',
-    margin: '1rem',
-    cursor: 'pointer',
-    zIndex: 150
-  },
+  
   nameInputContainer: {
     position: 'fixed',
     top: 0,
@@ -710,6 +803,7 @@ const styles = {
   },
   
   clearButton: {
+    textAlign: 'center',
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
@@ -730,6 +824,7 @@ const styles = {
     zIndex: 100
   },
   clearButtonMobile: {
+    textAlign: 'center',
     position: 'fixed',
     top: '1rem',
     right: '1rem',
@@ -807,57 +902,12 @@ const styles = {
     opacity: 0.9
   },
 
-  userPrompt: {
-    color: 'yellow',
-    fontSize: '1.5rem',
-  },
-  userPromptMobile: {
-    color: 'yellow',
-    fontSize: '1rem',
-  },
+  
 
-  aiRes: {
-    color: 'white',
-    fontSize: '1.5rem',
-    width: '90vw',
-  },
-  aiResMobile: {
-    color: 'white',
-    fontSize: '1rem',
-    width: '90vw',
-  },
+  
 
-  aiAd: {
-    color: 'black',
-    fontSize: '1.5rem',
-    margin: '1rem',
-    backgroundColor: 'white',
-    padding: '1rem',
-    borderRadius: '1rem',
-    border: '1px solid blue',
-  },
-  aiAdMobile: {
-    color: 'black',
-    fontSize: '1rem',
-    margin: '1rem',
-    backgroundColor: 'white',
-    padding: '1rem',
-    borderRadius: '1rem',
-    border: '1px solid blue',
-  },
-  aiAdBadge: {
-    position: 'relative',
-    backgroundColor: 'blue',
-    color: 'white',
-    padding: '0.5rem',
-    borderRadius: '0.5rem',
-    fontSize: '1rem',
-    margin: '0.5rem',
-    width: '1.5rem',
-    textAlign: 'center',
-    right: '0.5rem',
-    top: '0.5rem'
-  }
+     
+
 
 }
 

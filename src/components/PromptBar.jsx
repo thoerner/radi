@@ -27,6 +27,23 @@ export const PromptBar = props => {
             setSubmitButtonValue('Submit');
         }
     }, [loading, elipsis]);
+
+    const handleInputChange = e => {
+        setPromptInput(e.target.value);
+    }
+
+    useEffect(() => {
+        var input = document.getElementById("promptInput");
+        input.addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                if (event.shiftKey) {
+                } else {
+                    event.preventDefault();
+                    document.getElementById("submitButton").click();
+                }
+            }
+        });
+    }, []);
   
     return (
       <form onSubmit={handleSubmit}>
@@ -36,12 +53,12 @@ export const PromptBar = props => {
               {ai !==6 &&
                 <>
                   <span style={isMobile ? styles.promptMobile : styles.prompt}>
-                    <textarea id="promptInput" 
+                    <textarea className="scroll" id="promptInput" 
                         style={isMobile ? styles.promptInputMobile : styles.promptInput} 
                         value={promptInput} 
                         autoComplete="off" 
                         rows="1"
-                        onChange={(e) => setPromptInput(e.target.value)} 
+                        onChange={handleInputChange} 
                     />
                   </span> 
                   <span id="submitButton" 
@@ -106,11 +123,11 @@ const styles = {
         backgroundColor: 'white',
         color: 'black',
         lineHeight: '3rem',
-        msOverflowStyle: 'none',  /* IE and Edge */
-        scrollbarWidth: 'none',  /* Firefox */
+        MsOverflowStyle: 'none', 
+        scrollbarWidth: 'none', 
     },
     promptInputMobile: {
-        width: '86vw',
+        width: 'calc(96vw - 3.25rem)',
         height: '1.8rem',
         fontSize: '1rem',
         lineHeight: '1rem',
@@ -122,6 +139,8 @@ const styles = {
         color: 'black',
         outline: 'none',
         border: 'none',
+        MsOverflowStyle: 'none', 
+        scrollbarWidth: 'none', 
     },
     promptSubmitMobile: {
         position: 'fixed',
@@ -134,6 +153,7 @@ const styles = {
         border: 'none',
         borderRadius: '5px',
         cursor: 'pointer',
+        textAlign: 'center',
         zIndex: '150',
     },
     promptContainer: {
@@ -163,6 +183,7 @@ const styles = {
         lineHeight: '3rem',
         margin: '1rem',
         cursor: 'pointer',
+        textAlign: 'center',
         zIndex: 150
       },
 }
