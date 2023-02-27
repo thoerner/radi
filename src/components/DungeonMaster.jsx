@@ -57,7 +57,7 @@ export const DungeonMaster = props => {
       const healthBarStyle = {
         position: 'fixed',
         top: '1rem',
-        right: '15rem',
+        right: '17rem',
         margin: '8rem 1rem 0 0',
         padding: '1rem',
         borderRadius: '1rem',
@@ -89,7 +89,7 @@ export const DungeonMaster = props => {
       const energyBarStyle = {
         position: 'fixed',
         top: '1rem',
-        right: '31rem',
+        right: '33rem',
         margin: '8rem 1rem 0 0',
         padding: '1rem',
         borderRadius: '1rem',

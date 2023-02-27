@@ -84,7 +84,12 @@ function App() {
       name: 'Big Gay Al',
       intro: 'Introduce yourself.',
       index: 10
-    }
+    },
+    { 
+      name: 'Larry the Liar',
+      intro: 'Introduce yourself.',
+      index: 11
+    },
   ];
 
   const advertisers = useMemo(() => {
@@ -161,7 +166,7 @@ function App() {
       let newLinksArray = [...adLinks];
       newLinksArray[responses.length] = obj.link;
       setAdLinks(newLinksArray);
-      let ad = uEmojiParser.parseToUnicode(adResponse.substring(0, start));
+      let ad = uEmojiParser.parseToUnicode(adResponse.substring(0, start)).trim();
       setResponses([...responses, ad]);
       setAdResponse('');
   }, [adResponse, prompts, responses]);
@@ -239,7 +244,7 @@ function App() {
     const response = await getResponse(name, seed, intro, ai);
     response ? setConvo(response.convo) : setConvo('');
     setLoading(false);
-    setResponses([...responses, response.response]);
+    setResponses([...responses, response.response.trim()]);
     setPrompts([...prompts, intro])
   }
 
@@ -366,7 +371,7 @@ function App() {
     setPrompts([...prompts, prompt]);
     setLoading(true);
     const response = await getResponse(name, convo, prompt, ai);
-    setResponses([...responses, response.response]);
+    setResponses([...responses, response.response.trim()]);
     setConvo(response.convo);
     setLoading(false);
     setTimeout(() => {
@@ -478,6 +483,10 @@ function App() {
     }
   }
 
+  const removeLineBreaks = (text) => {
+    return text.replace(/(\r\n|\n|\r)/gm, "");
+  }
+
 
   return (
     <div className="App">
@@ -508,7 +517,7 @@ function App() {
           <PromptBar {...appProps}/>
           <div style={styles.mainCard}>
             {prompts.map((prompt, index) => (
-              <div key={index}>
+              <span key={index}>
                 {index !== 0 &&
                   <p style={isMobile ? styles.userPromptMobile : styles.userPrompt}>{prompt !== 'ad' ? prompt : null }</p>}
                 {prompt === 'ad' && (
@@ -522,7 +531,7 @@ function App() {
                           delay: 10,
                           loop: false,
                           deleteSpeed: Infinity,
-                          cursor: ''
+                          cursor: null
                         }}
                       />
                     </div>
@@ -537,17 +546,16 @@ function App() {
                         delay: 20,
                         loop: false,
                         deleteSpeed: Infinity,
-                        cursor: ''
+                        cursor: null
                       }}
                     />
                   </div>
                 )}
-              </div>
+              </span>
             ))}
           </div>
         </div>
       </header>
-      <div style={{height: '4rem'}}></div>
     </div>
   );
 }
@@ -566,10 +574,10 @@ const styles = {
     height: 'calc(100vh - 15rem)',
   },
   mainCard: {
-    display: 'fixed',
+    display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     backgroundColor: '#111',
     padding: '0.5rem',
     borderRadius: '1rem',
@@ -737,16 +745,7 @@ const styles = {
     cursor: 'pointer',
     zIndex: 100
   },
-  userPrompt: {
-    color: 'yellow',
-    fontSize: '1.5rem',
-    margin: '1rem'
-  },
-  userPromptMobile: {
-    color: 'yellow',
-    fontSize: '1rem',
-    margin: '1rem'
-  },
+  
   statusbar: {
     position: 'fixed',
     top: '1rem',
@@ -762,7 +761,7 @@ const styles = {
   goldBalance: {
     position: 'fixed',
     top: '1rem',
-    right: '1rem',
+    right: '3rem',
     margin: '8rem 1rem 0 0',
     backgroundColor: 'gold',
     padding: '1rem',
@@ -797,8 +796,8 @@ const styles = {
   },
   inventory: {
     position: 'fixed',
-    top: '1rem',
-    left: 0,
+    top: '2rem',
+    left: '2rem',
     margin: '8rem 1rem 0 2rem',
     backgroundColor: 'white',
     padding: '1rem',
@@ -807,28 +806,29 @@ const styles = {
     border: '1px solid black',
     opacity: 0.9
   },
+
+  userPrompt: {
+    color: 'yellow',
+    fontSize: '1.5rem',
+  },
+  userPromptMobile: {
+    color: 'yellow',
+    fontSize: '1rem',
+  },
+
   aiRes: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    alignSelf: 'flex-start',
     color: 'white',
     fontSize: '1.5rem',
-    margin: '1rem',
-    alignText: 'left'
+    width: '90vw',
   },
   aiResMobile: {
     display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    alignSelf: 'flex-start',
     color: 'white',
     fontSize: '1rem',
     margin: '1rem',
-    alignText: 'left'
+    width: '90vw',
   },
+
   aiAd: {
     color: 'black',
     fontSize: '1.5rem',
