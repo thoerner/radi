@@ -65,7 +65,7 @@ const styles = {
         width: '96vw',
         height: '2rem',
         fontSize: '1rem',
-        fontWeight: 'lighter',
+        fontWeight: '400',
         padding: '0.5rem',
         boxSizing: 'border-box',
         borderRadius: '0.5rem',
