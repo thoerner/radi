@@ -822,10 +822,8 @@ const styles = {
     width: '90vw',
   },
   aiResMobile: {
-    display: 'flex',
     color: 'white',
     fontSize: '1rem',
-    margin: '1rem',
     width: '90vw',
   },
 
