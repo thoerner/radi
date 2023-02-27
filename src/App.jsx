@@ -25,6 +25,7 @@ function App() {
   const [buttons, setButtons] = useState(<div></div>);
   const [adTime, setAdTime] = useState(false);
   const [adResponse, setAdResponse] = useState('');
+  const [adLink, setAdLink] = useState('');
   const [adLinks, setAdLinks] = useState([]);
   const [ai, setAi] = useState(0);
   const [roaming, setRoaming] = useState(false);
@@ -132,6 +133,7 @@ function App() {
     const setAds = async () => {
       const response = await getResponse('', '', "ad", ai);
       setAdResponse(response.response);
+      setAdLink(response.link);
       setLoading(false);
     }
     if (adTime) {
@@ -148,18 +150,16 @@ function App() {
   // create response from ad
   useEffect(() => {
     if (adResponse === '') return;
+      console.log("ad response: " + adResponse)
+      console.log("ad link: " + adLink)
       setPrompts([...prompts, "ad"]);
-      const start = adResponse.indexOf('{');
-      var jsonStr = adResponse.substring(start);
-      jsonStr = jsonStr.replace(/(<([^>]+)>)/gi, "");
-      jsonStr = jsonStr.substring(0, jsonStr.indexOf('}') + 1);
-      const obj = JSON.parse(jsonStr);
       let newLinksArray = [...adLinks];
-      newLinksArray[responses.length] = obj.link;
+      newLinksArray[responses.length] = adLink.toString();
       setAdLinks(newLinksArray);
-      let ad = uEmojiParser.parseToUnicode(adResponse.substring(0, start)).trim();
+      let ad = uEmojiParser.parseToUnicode(adResponse).trim();
       setResponses([...responses, ad]);
       setAdResponse('');
+      setAdLink('');
   }, [adResponse, prompts, responses]);
 
   // get ai response from api
@@ -197,6 +197,7 @@ function App() {
     }
 
     let body = await response.json();
+    if (body.error) return 'Error: ' + body.error;
     if (response.status !== 200) return 'Error: ' + body.error;
 
     // TODO: move parsing to the backend
@@ -230,6 +231,7 @@ function App() {
     const response = await getResponse(name, seed, intro, ai);
     response ? setConvo(response.convo) : setConvo('');
     setLoading(false);
+    if (!response.response) return;
     setResponses([...responses, response.response.trim()]);
     setPrompts([...prompts, intro])
   }
