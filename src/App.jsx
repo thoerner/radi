@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import Typewriter from 'typewriter-effect';
 import { useSearchParams } from 'react-router-dom';
@@ -6,49 +6,13 @@ import toast, { Toaster } from 'react-hot-toast';
 import uEmojiParser from 'universal-emoji-parser';
 import { DungeonMaster } from './components/DungeonMaster';
 import { PromptBar } from './components/PromptBar';
-import { useWindowDimensions } from './utils/tools';
-
-function scrollToBottom() {
-  const mainCardElement = document.getElementById('mainCard');
-  mainCardElement.scrollTop = mainCardElement.scrollHeight;
-}
-
-function useInterval(callback, delay) {
-  const intervalRef = useRef();
-  const callbackRef = useRef(callback);
-
-  // Remember the latest callback:
-  //
-  // Without this, if you change the callback, when setInterval ticks again, it
-  // will still call your old callback.
-  //
-  // If you add `callback` to useEffect's deps, it will work fine but the
-  // interval will be reset.
-
-  useEffect(() => {
-    callbackRef.current = callback;
-  }, [callback]);
-
-  // Set up the interval:
-
-  useEffect(() => {
-    if (typeof delay === 'number') {
-      intervalRef.current = window.setInterval(() => callbackRef.current(), delay);
-
-      // Clear interval if the components is unmounted or the delay changes:
-      return () => window.clearInterval(intervalRef.current);
-    }
-  }, [delay]);
-  
-  // Returns a ref to the interval ID in case you want to clear it manually:
-  return intervalRef;
-}
+import { useWindowDimensions, scrollToBottom, useInterval } from './utils/tools';
 
 function App() {
   const [searchParams] = useSearchParams();
   const [prompts, setPrompts] = useState([]);
   const [responses, setResponses] = useState([]);
-  const [name, setName] = useState('User');
+  const [name, ] = useState('User');
   const [convo, setConvo] = useState('');
   const [convoActive, setConvoActive] = useState(false);
   const [promptInput, setPromptInput] = useState('');
@@ -63,15 +27,11 @@ function App() {
   const [adResponse, setAdResponse] = useState('');
   const [adLinks, setAdLinks] = useState([]);
   const [ai, setAi] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
   const [roaming, setRoaming] = useState(false);
 
   const { width } = useWindowDimensions();
-
-  useEffect(() => {
-    setIsMobile(width < 600);
-  }, []);
-
+  const isMobile = width < 600;
+  
   const aiList = [
     {
       name: 'Radi the Wizard',
@@ -128,54 +88,44 @@ function App() {
     },
   ];
 
-  const advertisers = useMemo(() => {
-    return [
-      "Coca-Cola", 
-      "Pepsi",
-      "McDonald's",
-      "Burger King",
-      "Wendy's",
-      "Taco Bell",
-      "KFC",
-      "Pizza Hut",
-      "Subway",
-      "Domino's",
-      "Starbucks",
-      "Dunkin'",
-      "Walmart",
-      "Target",
-      "Amazon",
-      "Apple",
-      "Google",
-      "Microsoft",
-      "Facebook",
-      "Twitter",
-      "Instagram",
-      "Snapchat",
-      "TikTok",
-      "Reddit",
-      "Twitch",
-      "YouTube",
-      "Netflix",
-      "Spotify",
-      "Hulu",
-      "Disney+",
-      "HBO Max",
-    ];
-  }, []);
-
-  // ad timer
+  // start ad timer and set scroll detector, triggered on component mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      setAdTime(true);
-    }, 150000); // 2.5 minutes, 150000
-    return () => clearInterval(interval);
+    const adTimer  = () => {
+      const interval = setInterval(() => {
+        setAdTime(true);
+      }, 150000); // 2.5 minutes, 150000
+      return () => clearInterval(interval);
+    }
+    const scrollDetector = () => {
+      var mainCardElement = document.getElementById('mainCard');
+      let prevScrollPos = mainCardElement.scrollTop;
+      const handleScroll = () => {
+        const currentScrollPos = mainCardElement.scrollTop;
+        if (currentScrollPos > prevScrollPos) {
+          // scrolling up
+          setRoaming(true);
+        } else if (currentScrollPos < prevScrollPos) {
+          // scrolling down
+          setRoaming(true);
+        }
+        prevScrollPos = currentScrollPos;
+
+        if (mainCardElement.scrollTop + mainCardElement.clientHeight >= mainCardElement.scrollHeight) {
+          // reached end of scrolling
+          setRoaming(false);
+        }
+      }
+      mainCardElement.addEventListener('scroll', handleScroll);
+      return () => mainCardElement.removeEventListener('scroll', handleScroll);
+    }
+    scrollDetector();
+    adTimer();
   }, []);
 
   // get and set ad
   useEffect(() => {
     const setAds = async () => {
-      const response = await getResponse(advertisers[Math.floor(Math.random() * advertisers.length)], convo, "ad", ai);
+      const response = await getResponse('', '', "ad", ai);
       setAdResponse(response.response);
       setLoading(false);
     }
@@ -227,7 +177,6 @@ function App() {
         }),
       });
     } else {
-      
       response = await fetch('https://radi-api.crypt0potam.us/api', {
         method: 'POST',
         headers: {
@@ -240,10 +189,12 @@ function App() {
           aiIndex: aiIndex,
         }),
       });
-
     }
+
     let body = await response.json();
     if (response.status !== 200) return 'Error: ' + body.error;
+
+    // TODO: move parsing to the backend
 
     body.response = body.response.replace(/&lt;/g, '<');
     body.response = body.response.replace(/&gt;/g, '>');
@@ -264,28 +215,7 @@ function App() {
     return body;
   };
 
-  const createButtonsJSX = async (keys) => {
-    const keyArray = await JSON.parse(keys);
-    const buttonJsx = (
-      <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
-        {keyArray.map((k) => {
-          return (
-            <div
-              key={k.choiceId}
-              className="choiceButton"
-              onClick={() => {
-                window.handleChoiceClick(k.choiceId, k.gold, k.health, k.cost, k.item, k.energy, k.useItem);
-              }}
-            >
-              {k.buttonText}{k.cost ? ` (-${k.cost} gold)` : ''}{k.useItem ? ` (-${k.useItem})` : ''}
-            </div>
-          );
-        })}
-      </div>
-    );
-    return buttonJsx;
-  }
-
+  // function to get response from ai
   const getConvo = async (seed) => {
     if (convoActive) return;
     setConvoActive(true);
@@ -299,6 +229,7 @@ function App() {
     setPrompts([...prompts, intro])
   }
 
+  // get new convo if no convo is active
   useEffect(() => { 
     if (!convoActive) {
       setLoading(true);
@@ -307,8 +238,7 @@ function App() {
     }
   }, [convoActive]);
 
-  
-  // scroll to bottom of chat
+  // scroll to bottom of chat on interval if not roaming
   const intervalRef = useInterval(() => {
     if (!roaming) {
       const mainCardElement = document.getElementById('mainCard');
@@ -317,31 +247,12 @@ function App() {
       // window.clearInterval(intervalRef.current);
     }
   }, 500);
-  
-  // detect when user has scrolled
+
+  // scroll to bottom of chat, triggered by prompts or responses
   useEffect(() => {
-    var mainCardElement = document.getElementById('mainCard');
-    let prevScrollPos = mainCardElement.scrollTop;
-    const handleScroll = () => {
-      const currentScrollPos = mainCardElement.scrollTop;
-      if (currentScrollPos > prevScrollPos) {
-        // scrolling up
-        setRoaming(true);
-      } else if (currentScrollPos < prevScrollPos) {
-        // scrolling down
-        setRoaming(true);
-      }
-      prevScrollPos = currentScrollPos;
-
-      if (mainCardElement.scrollTop + mainCardElement.clientHeight >= mainCardElement.scrollHeight) {
-        // reached end of scrolling
-        setRoaming(false);
-      }
-    }
-    mainCardElement.addEventListener('scroll', handleScroll);
-    return () => mainCardElement.removeEventListener('scroll', handleScroll);
-  }, []);
-
+    scrollToBottom('mainCard');
+  }, [prompts, responses]);
+  
   useEffect(() => {
     handleClear();
     if (!convoActive) {
@@ -351,8 +262,7 @@ function App() {
     }
   }, [ai])
 
-
-
+  // handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
@@ -364,15 +274,9 @@ function App() {
     setResponses([...responses, response.response]);
     setConvo(response.convo);
     setLoading(false);
-    setTimeout(() => {
-      scrollToBottom();
-    }, 100);
   };
 
-  const handleNameChange = (e) => {
-    setName(e.target.value);
-  };
-
+  // handle clear button
   const handleClear = () => {
     setPrompts([]);
     setResponses([]);
@@ -386,14 +290,15 @@ function App() {
     setConvoActive(false);
   };
 
+  // handle ai change from dropdown
   const handleAiChange = (e) => {
     setAiUpdated(true);
     setAi(Number(e.target.value));
   }
 
+  // props to pass to app
   const appProps = {
     handleSubmit,
-    handleNameChange,
     handleClear,
     handleAiChange,
     aiUpdated,
@@ -419,7 +324,7 @@ function App() {
     styles
   }
 
-  // Dungeon Master Logic
+  // Dungeon Master Logic TODO: move to separate file
 
   useEffect(() => {
     if (energy <= 0) {
@@ -447,6 +352,28 @@ function App() {
     }
   }, [health]);
 
+  const createButtonsJSX = async (keys) => {
+    const keyArray = await JSON.parse(keys);
+    const buttonJsx = (
+      <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+        {keyArray.map((k) => {
+          return (
+            <div
+              key={k.choiceId}
+              className="choiceButton"
+              onClick={() => {
+                window.handleChoiceClick(k.choiceId, k.gold, k.health, k.cost, k.item, k.energy, k.useItem);
+              }}
+            >
+              {k.buttonText}{k.cost ? ` (-${k.cost} gold)` : ''}{k.useItem ? ` (-${k.useItem})` : ''}
+            </div>
+          );
+        })}
+      </div>
+    );
+    return buttonJsx;
+  }
+
   const handleChoice = async (choice) => {
     const prompt = choice;
     setPromptInput('');
@@ -456,14 +383,7 @@ function App() {
     setResponses([...responses, response.response.trim()]);
     setConvo(response.convo);
     setLoading(false);
-    setTimeout(() => {
-      scrollToBottom();
-    }, 100);
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [prompts, responses]);
 
   window.handleChoiceClick = (choice, goldUpdate, healthUpdate, cost, item, energyUpdate, loseItem) => {
     var totalGold = -cost || 0;
@@ -568,11 +488,6 @@ function App() {
       setEnergy(energy + energyUpdate);
     }
   }
-
-  const removeLineBreaks = (text) => {
-    return text.replace(/(\r\n|\n|\r)/gm, "");
-  }
-
 
   return (
     <div>
