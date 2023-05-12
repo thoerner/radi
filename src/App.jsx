@@ -125,7 +125,7 @@ function App() {
       return () => mainCardElement.removeEventListener('scroll', handleScroll);
     }
     scrollDetector();
-    adTimer();
+    // adTimer();
   }, []);
 
   // get and set ad

@@ -1,7 +1,7 @@
 import { OpenAI } from 'langchain'
 import { marked } from 'marked'
 
-const model = new OpenAI({ openAIApiKey: process.env.REACT_APP_OPENAI_API_KEY, temperature: 0.9, model: 'text-davinci-003' })
+const model = new OpenAI({ openAIApiKey: process.env.REACT_APP_OPENAI_API_KEY, temperature: 0.9, modelName: 'gpt-3.5-turbo' })
 
 export const chat = async ({ name, convo, prompt }) => {
 
