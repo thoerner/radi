@@ -65,6 +65,7 @@ export const DungeonMaster = props => {
         border: '1px solid black',
         opacity: 0.9,
         backgroundColor: healthColor,
+        zIndex: 2,
       }
   
       return (
@@ -97,6 +98,7 @@ export const DungeonMaster = props => {
         border: '1px solid black',
         opacity: 0.9,
         backgroundColor: energyColor,
+        zIndex: 2,
       }
       return (
         <div style={energyBarStyle}>

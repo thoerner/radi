@@ -279,6 +279,7 @@ function App() {
     setLoading(true);
     const response = await getResponse(name, convo, prompt, ai);
     setResponses([...responses, response.response]);
+    console.log(response.convo)
     setConvo(response.convo);
     setLoading(false);
   };
@@ -798,7 +799,8 @@ const styles = {
     borderRadius: '1rem',
     color: 'black',
     border: '1px solid black',
-    opacity: 0.9
+    opacity: 0.9,
+    zIndex: 2,
   },
   healthBar: {
     position: 'fixed',
@@ -810,7 +812,8 @@ const styles = {
     borderRadius: '1rem',
     color: 'white',
     border: '1px solid black',
-    opacity: 0.9
+    opacity: 0.9,
+    zIndex: 2,
   },
   energyBar: {
     position: 'fixed',
@@ -822,7 +825,8 @@ const styles = {
     borderRadius: '1rem',
     color: 'white',
     border: '1px solid black',
-    opacity: 0.9
+    opacity: 0.9,
+    zIndex: 2,
   },
   inventory: {
     position: 'fixed',
@@ -834,7 +838,8 @@ const styles = {
     borderRadius: '1rem',
     color: 'black',
     border: '1px solid black',
-    opacity: 0.9
+    opacity: 0.9,
+    zIndex: 2,
   },
 
   
