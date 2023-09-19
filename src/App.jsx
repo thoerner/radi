@@ -91,6 +91,11 @@ function App() {
       name: 'The Goat Gaud',
       intro: 'Introduce yourself.',
       index: 12
+    },
+    {
+      name: 'Lazy Butt',
+      intro: 'Introduce yourself.',
+      index: 13
     }
   ];
 
